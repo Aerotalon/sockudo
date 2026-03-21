@@ -40,8 +40,8 @@ use tokio::signal;
 // Factory imports
 use crate::cleanup::{CleanupConfig, CleanupSender};
 use crate::http_handler::{
-    batch_events, channel, channel_users, channels, events, metrics, terminate_user_connections,
-    up, usage,
+    batch_events, channel, channel_users, channels, events, fallback_404, metrics,
+    terminate_user_connections, up, usage,
 };
 use sockudo_adapter::factory::AdapterFactory;
 use sockudo_app::AppManagerFactory;
@@ -1016,6 +1016,10 @@ impl SockudoServer {
         if self.config.http_api.usage_enabled {
             router = router.route("/usage", get(usage));
         }
+
+        // Return plain text 404 for unmatched routes.
+        // Without this, Axum returns an empty-body 404 which nginx may serve as a file download.
+        router = router.fallback(fallback_404);
 
         // Apply rate limiter middleware if it was created
         if let Some(middleware) = rate_limiter_middleware_layer {
