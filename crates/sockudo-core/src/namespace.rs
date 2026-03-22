@@ -189,12 +189,15 @@ impl Namespace {
             .collect();
 
         for channel_name in channels_to_check {
-            if let Some(socket_set) = self.channels.get(&channel_name) {
+            let should_remove = if let Some(socket_set) = self.channels.get(&channel_name) {
                 socket_set.remove(&socket_id);
-                if socket_set.is_empty() {
-                    self.channels
-                        .remove_if(&channel_name, |_, set| set.is_empty());
-                }
+                socket_set.is_empty()
+            } else {
+                false
+            };
+            if should_remove {
+                self.channels
+                    .remove_if(&channel_name, |_, set| set.is_empty());
             }
         }
 

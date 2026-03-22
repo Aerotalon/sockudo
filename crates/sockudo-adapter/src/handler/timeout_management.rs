@@ -122,9 +122,17 @@ impl ConnectionHandler {
                                     "No pong received from socket {} after ping, forcing cleanup",
                                     socket_id_clone
                                 );
+                                let error_msg = PusherMessage::error(
+                                    4201,
+                                    "Pong reply not received in time".to_string(),
+                                    None,
+                                );
+                                let _ = ws.send_message(&error_msg);
                                 let _ = ws
-                                    .close(4201, "Pong reply not received in time".to_string())
-                                    .await;
+                                    .message_sender
+                                    .send_close(4201, "Pong reply not received in time");
+                                ws.state.status =
+                                    sockudo_core::websocket::ConnectionStatus::Closed;
                                 drop(ws);
                                 conn_manager.cleanup_connection(&app_id_clone, conn).await;
                                 break;
